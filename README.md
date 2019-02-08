@@ -53,7 +53,7 @@ you need download pretrained chinese bert model
 5. Modify configuration information in `pybert/config/basic_config.py`(the path of data,...).
 6. run `python train_bert`.
 
-## fine-tuning result
+## Fine-tuning result
 
 ### training 
 
