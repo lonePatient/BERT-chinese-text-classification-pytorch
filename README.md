@@ -77,7 +77,7 @@ Epoch: 3 - loss: 0.0222 acc: 0.9939 - f1: 0.9911 val_loss: 0.0785 - val_acc: 0.9
 
 ### training figure
 
-![]( https://lonepatient-1257945978.cos.ap-chengdu.myqcloud.com/20190214204557.PNG)
+![](https://lonepatient-1257945978.cos.ap-chengdu.myqcloud.com/20190214204557.PNG)
 
 ## Tips
 
