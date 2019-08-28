@@ -1,91 +1,70 @@
-#encoding:utf-8
+# encoding:utf-8
 import numpy as np
-import json
-from os import path
-from ..utils.utils import ensure_dir
+from pathlib import Path
 import matplotlib.pyplot as plt
-plt.switch_backend('agg') # 防止ssh上绘图问题
+from ..common.tools import load_json
+from ..common.tools import save_json
+plt.switch_backend('agg')
+
 
 class TrainingMonitor():
-    def __init__(self, fig_dir, arch,json_dir=None, start_at=0):
+    def __init__(self, file_dir, arch, add_test=False):
         '''
-        :param figPath: 保存图像路径
-        :param jsonPath: 保存json文件路径
         :param startAt: 重新开始训练的epoch点
         '''
-        self.start_at = start_at
+        if isinstance(file_dir, Path):
+            pass
+        else:
+            file_dir = Path(file_dir)
+        file_dir.mkdir(parents=True, exist_ok=True)
+
+        self.arch = arch
+        self.file_dir = file_dir
         self.H = {}
-        self.loss_path = path.sep.join([fig_dir,arch+'_loss.png'])
-        self.acc_path = path.sep.join([fig_dir,arch+"_accuracy.png"])
-        self.f1_path  = path.sep.join([fig_dir,arch+"_f1.png"])
-        self.json_path = path.sep.join([json_dir,arch+"_training_monitor.json"])
-        self.use = 'on_epoch_end'
+        self.add_test = add_test
+        self.json_path = file_dir / (arch + "_training_monitor.json")
 
-        ensure_dir(fig_dir)
-        ensure_dir(json_dir)
-
-    def _restart(self):
-        if self.start_at > 0:
-            # 如果jsonPath文件存在，咋加载历史训练数据
+    def reset(self,start_at):
+        if start_at > 0:
             if self.json_path is not None:
-                if path.exists(self.json_path):
-                    self.H = json.loads(open(self.json_path).read())
+                if self.json_path.exists():
+                    self.H = load_json(self.json_path)
                     for k in self.H.keys():
-                        self.H[k] = self.H[k][:self.start_at]
+                        self.H[k] = self.H[k][:start_at]
 
-    def step(self,logs={}):
+    def epoch_step(self, logs={}):
         for (k, v) in logs.items():
             l = self.H.get(k, [])
             # np.float32会报错
-            if not isinstance(v,np.float):
-                v = round(float(v),4)
+            if not isinstance(v, np.float):
+                v = round(float(v), 4)
             l.append(v)
             self.H[k] = l
 
         # 写入文件
         if self.json_path is not None:
-            f = open(self.json_path, "w")
-            f.write(json.dumps(self.H))
-            f.close()
+            save_json(data = self.H,file_path=self.json_path)
 
-        #保存train图像
+        # 保存train图像
+        if len(self.H["loss"]) == 1:
+            self.paths = {key: self.file_dir / (self.arch + f'_{key.upper()}') for key in self.H.keys()}
+
         if len(self.H["loss"]) > 1:
-            # loss变化曲线
-            # plot the training loss and accuracy
-            N = np.arange(0, len(self.H["loss"]))
-            plt.style.use("ggplot")
-            plt.figure()
-            plt.plot(N, self.H["loss"],label="train_loss")
-            plt.plot(N, self.H["val_loss"],label="val_loss")
-            plt.legend()
-            plt.xlabel("Epoch #")
-            plt.ylabel("Loss")
-            plt.title("Training Loss [Epoch {}]".format(len(self.H["loss"])))
-            plt.savefig(self.loss_path)
-            plt.close()
-
-            # 准确度变化曲线
-            plt.figure()
-            plt.plot(N, self.H["acc"], label="train_acc")
-            plt.plot(N, self.H["val_acc"], label="val_acc")
-            # plt.plot(N, self.H["rank"], label="train_rank5")
-            # plt.plot(N, self.H["val_rank"], label="val_rank5")
-            plt.legend()
-            plt.xlabel("Epoch #")
-            plt.ylabel("Accuracy")
-            plt.title("Training Accuracy [Epoch {}]".format(len(self.H["acc"])))
-            plt.savefig(self.acc_path)
-            plt.close()
-
-            # F1 score变化曲线
-            plt.figure()
-            plt.plot(N, self.H["f1"], label="train_f1")
-            plt.plot(N, self.H["val_f1"], label="val_f1")
-            plt.legend()
-            plt.xlabel("Epoch #")
-            plt.ylabel("F1 Score")
-            plt.title("Training F1 Score [Epoch {}]".format(len(self.H["f1"])))
-            plt.savefig(self.f1_path)
-            plt.close()
-
-
+            # 指标变化
+            # 曲线
+            # 需要成对出现
+            keys = [key for key, _ in self.H.items() if '_' not in key]
+            for key in keys:
+                N = np.arange(0, len(self.H[key]))
+                plt.style.use("ggplot")
+                plt.figure()
+                plt.plot(N, self.H[key], label=f"train_{key}")
+                plt.plot(N, self.H[f"valid_{key}"], label=f"valid_{key}")
+                if self.add_test:
+                    plt.plot(N, self.H[f"test_{key}"], label=f"test_{key}")
+                plt.legend()
+                plt.xlabel("Epoch #")
+                plt.ylabel(key)
+                plt.title(f"Training {key} [Epoch {len(self.H[key])}]")
+                plt.savefig(str(self.paths[key]))
+                plt.close()

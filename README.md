@@ -1,6 +1,6 @@
 # BERT Chinese text classification by PyTorch
 
-This repo contains a PyTorch implementation of a pretrained BERT model  for text classification.
+This repo contains a PyTorch implementation of a pretrained BERT model  for chinese text classification.
 
 ## Structure of the code
 
@@ -13,11 +13,10 @@ At the root of the project, you will see:
 |  |  └── trainingmonitor.py　
 |  |  └── ...
 |  └── config
-|  |  └── basic_config.py #a configuration file for storing model parameters
+|  |  └── base.py #a configuration file for storing model parameters
 |  └── dataset　　　
 |  └── io　　　　
-|  |  └── dataset.py　　
-|  |  └── data_transformer.py　　
+|  |  └── bert_processor.py
 |  └── model
 |  |  └── nn　
 |  |  └── pretrain　
@@ -27,8 +26,7 @@ At the root of the project, you will see:
 |  |  └── trainer.py 
 |  |  └── ...
 |  └── utils # a set of utility functions
-├── convert_tf_checkpoint_to_pytorch.py
-├── train_bert.py
+├── run_bert.py
 ```
 ## Dependencies
 
@@ -39,19 +37,23 @@ At the root of the project, you will see:
 - scikit-learn
 - PyTorch 1.0
 - matplotlib
-- tensorboardX
-- Tensorflow (to be able to run TensorboardX)
+- pytorch_transformers=1.1.0
 
 ## How to use the code
 
 you need download pretrained chinese bert model
 
-1. Download the Chinese BERT pretrained podel from [google search](https://storage.googleapis.com/bert_models/2018_11_03/chinese_L-12_H-768_A-12.zip) and place it into the `/pybert/model/pretrain` directory.
-2. `pip install pytorch-pretrained-bert` from [github](https://github.com/huggingface/pytorch-pretrained-BERT).
-3. run `python convert_tf_checkpoint_to_pytorch.py` to transfer the pretrained model(tensorflow version)  into pytorch form .
-4. prepare Chinese raw data(example,news data), you can modify the `io.data_transformer.py` to adapt your data.
-5. Modify configuration information in `pybert/config/basic_config.py`(the path of data,...).
-6. run `python train_bert`.
+1. Download the Bert pretrained model from [s3](https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-chinese-pytorch_model.bin) 
+2. Download the Bert config file from [s3](https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-chinese-config.json) 
+3. Download the Bert vocab file from [s3](https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-chinese-vocab.txt) 
+4. modify `bert-base-chinese-pytorch_model.bin` to `pytorch_model.bin` , `bert-base-chinese-config.json` to `config.json` ,`bert-base-chinese-vocab.txt` to `vocab.txt`
+5. place `model` ,`config` and `vocab` file into  the `/pybert/pretrain/bert/base-uncased` directory.
+2. `pip install pytorch-transformers` from [github](https://github.com/huggingface/pytorch-transformers).
+4. Prepare [BaiduNet](https://pan.baidu.com/s/1Gn0rHHhrod6ed8LDTJ-rtA){password:ruxu}, you can modify the `io.bert_processor.py` to adapt your data.
+5. Modify configuration information in `pybert/config/base.py`(the path of data,...).
+6. Run `python run_bert.py --do_data` to preprocess data.
+7. Run `python run_bert.py --do_train --save_best` to fine tuning bert model.
+8. Run `run_bert.py --do_test --do_lower_case` to predict new data.
 
 ## Fine-tuning result
 
