@@ -20,7 +20,7 @@ class Predictor(object):
                 batch = tuple(t.to(self.device) for t in batch)
                 input_ids, input_mask, segment_ids, label_ids = batch
                 logits = self.model(input_ids, segment_ids, input_mask)
-                logits = logits.softmax()
+                logits = logits.softmax(-1)
                 if all_logits is None:
                     all_logits = logits.detach().cpu().numpy()
                 else:
